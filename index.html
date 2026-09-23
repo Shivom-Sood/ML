@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iris Flower Species Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .accuracy-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #444;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        input[type="number"]:hover {
+            border-color: #a0a0a0;
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .predict-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .results {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #f0f0f0;
+            display: none;
+        }
+
+        .prediction-result {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .prediction-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .prediction-value {
+            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: capitalize;
+        }
+
+        .probability-bars {
+            margin-top: 20px;
+        }
+
+        .probability-item {
+            margin-bottom: 12px;
+        }
+
+        .probability-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .bar-container {
+            background: #f0f0f0;
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .bar.setosa {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        }
+
+        .bar.versicolor {
+            background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+        }
+
+        .bar.virginica {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .prediction-value {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌸 Iris Species Predictor</h1>
+        <p class="subtitle">Predict iris species from flower measurements</p>
+        
+        <div class="accuracy-badge">
+            Model Accuracy: <span id="accuracy">100</span>%
+        </div>
+
+        <form id="irisForm">
+            <div class="form-group">
+                <label for="sepalLength">Sepal Length (cm)</label>
+                <input 
+                    type="number" 
+                    id="sepalLength" 
+                    min="4.0" 
+                    max="8.0" 
+                    step="0.1" 
+                    placeholder="e.g., 5.1"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="sepalWidth">Sepal Width (cm)</label>
+                <input 
+                    type="number" 
+                    id="sepalWidth" 
+                    min="2.0" 
+                    max="4.5" 
+                    step="0.1" 
+                    placeholder="e.g., 3.5"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="petalLength">Petal Length (cm)</label>
+                <input 
+                    type="number" 
+                    id="petalLength" 
+                    min="1.0" 
+                    max="7.0" 
+                    step="0.1" 
+                    placeholder="e.g., 1.4"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="petalWidth">Petal Width (cm)</label>
+                <input 
+                    type="number" 
+                    id="petalWidth" 
+                    min="0.1" 
+                    max="2.5" 
+                    step="0.1" 
+                    placeholder="e.g., 0.2"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="predict-btn">Predict Species</button>
+        </form>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="results" id="results">
+            <div class="prediction-result">
+                <p class="prediction-label">Predicted Species</p>
+                <p class="prediction-value" id="predictedSpecies">-</p>
+            </div>
+
+            <div class="probability-bars">
+                <div class="probability-item">
+                    <div class="probability-label">
+                        <span>Setosa</span>
+                        <span id="probSetosa">0%</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar setosa" id="barSetosa" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="probability-item">
+                    <div class="probability-label">
+                        <span>Versicolor</span>
+                        <span id="probVersicolor">0%</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar versicolor" id="barVersicolor" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="probability-item">
+                    <div class="probability-label">
+                        <span>Virginica</span>
+                        <span id="probVirginica">0%</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar virginica" id="barVirginica" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // MODEL PARAMETERS (Pre-trained Logistic Regression)
+        // These coefficients and intercepts were trained using scikit-learn
+        // on the classic Iris dataset with multinomial logistic regression.
+        // ============================================================
+        
+        const MODEL = {
+            // Feature names in order (must match input order)
+            featureNames: ["sepal length (cm)", "sepal width (cm)", "petal length (cm)", "petal width (cm)"],
+            
+            // Class names (in order corresponding to coefficient rows)
+            classNames: ["setosa", "versicolor", "virginica"],
+            
+            // Coefficients: 3 classes × 4 features
+            // Each row contains weights for one class
+            coef: [
+                [-0.3938, 0.9622, -2.3752, -0.9987],   // Setosa coefficients
+                [0.5086, -0.2548, -0.2129, -0.7758],   // Versicolor coefficients
+                [-0.1147, -0.7074, 2.5881, 1.7745]     // Virginica coefficients
+            ],
+            
+            // Intercept (bias) for each class
+            intercept: [9.0115, 1.8677, -10.8792],
+            
+            // Model accuracy on test data
+            accuracy: 1.0
+        };
+
+        // Display model accuracy
+        document.getElementById('accuracy').textContent = (MODEL.accuracy * 100).toFixed(0);
+
+        /**
+         * Calculate raw scores (logits) for each class
+         * 
+         * This function computes the linear combination of inputs and weights
+         * for each class: score_i = sum(coef[i][j] * input[j]) + intercept[i]
+         * 
+         * @param {number[]} inputs - Array of 4 feature values [sepalLength, sepalWidth, petalLength, petalWidth]
+         * @returns {number[]} Array of 3 raw scores (one per class)
+         */
+        function calculateRawScores(inputs) {
+            const scores = [];
+            
+            // Loop through each class (3 classes total)
+            for (let i = 0; i < MODEL.classNames.length; i++) {
+                let score = MODEL.intercept[i]; // Start with the bias/intercept
+                
+                // Add weighted sum of features: coef[i][j] * input[j]
+                for (let j = 0; j < inputs.length; j++) {
+                    score += MODEL.coef[i][j] * inputs[j];
+                }
+                
+                scores.push(score);
+            }
+            
+            return scores;
+        }
+
+        /**
+         * Apply softmax function to convert raw scores to probabilities
+         * 
+         * The softmax function ensures:
+         * 1. All outputs are between 0 and 1
+         * 2. All outputs sum to 1.0 (100%)
+         * 
+         * Formula: probability_i = exp(score_i) / sum(exp(score_j) for all j)
+         * 
+         * @param {number[]} scores - Array of raw scores from calculateRawScores()
+         * @returns {number[]} Array of probabilities (one per class, summing to 1.0)
+         */
+        function softmax(scores) {
+            // Step 1: Calculate e^score for each class
+            const expScores = scores.map(score => Math.exp(score));
+            
+            // Step 2: Sum all exponential scores
+            const sumExp = expScores.reduce((sum, val) => sum + val, 0);
+            
+            // Step 3: Normalize each exponential score by dividing by the sum
+            // This gives us probabilities that sum to 1.0
+            const probabilities = expScores.map(expScore => expScore / sumExp);
+            
+            return probabilities;
+        }
+
+        /**
+         * Main prediction function
+         * 
+         * Takes the 4 flower measurements and returns:
+         * - The predicted species (class with highest probability)
+         * - The probability distribution across all classes
+         * 
+         * @param {Object} measurements - Object containing sepalLength, sepalWidth, petalLength, petalWidth
+         * @returns {Object} Object with predictedClass (string) and probabilities (array)
+         */
+        function predict(measurements) {
+            // Extract features in the correct order
+            const inputs = [
+                measurements.sepalLength,
+                measurements.sepalWidth,
+                measurements.petalLength,
+                measurements.petalWidth
+            ];
+            
+            // Step 1: Calculate raw scores for each class
+            const rawScores = calculateRawScores(inputs);
+            
+            // Step 2: Convert scores to probabilities using softmax
+            const probabilities = softmax(rawScores);
+            
+            // Step 3: Find the class with the highest probability
+            let maxProbIndex = 0;
+            for (let i = 1; i < probabilities.length; i++) {
+                if (probabilities[i] > probabilities[maxProbIndex]) {
+                    maxProbIndex = i;
+                }
+            }
+            
+            return {
+                predictedClass: MODEL.classNames[maxProbIndex],
+                probabilities: probabilities
+            };
+        }
+
+        /**
+         * Validate input values
+         * Checks that all inputs are within reasonable ranges for iris flowers
+         * 
+         * @param {Object} measurements - Object containing the four measurements
+         * @returns {Object} Object with isValid (boolean) and error (string or null)
+         */
+        function validateInputs(measurements) {
+            const ranges = {
+                sepalLength: { min: 4.0, max: 8.0, name: "Sepal Length" },
+                sepalWidth: { min: 2.0, max: 4.5, name: "Sepal Width" },
+                petalLength: { min: 1.0, max: 7.0, name: "Petal Length" },
+                petalWidth: { min: 0.1, max: 2.5, name: "Petal Width" }
+            };
+
+            for (const [key, value] of Object.entries(measurements)) {
+                const range = ranges[key];
+                
+                if (value === null || value === '' || isNaN(value)) {
+                    return {
+                        isValid: false,
+                        error: `${range.name} is required`
+                    };
+                }
+                
+                if (value < range.min || value > range.max) {
+                    return {
+                        isValid: false,
+                        error: `${range.name} must be between ${range.min} and ${range.max} cm`
+                    };
+                }
+            }
+
+            return { isValid: true, error: null };
+        }
+
+        /**
+         * Update the UI with prediction results
+         * Shows the predicted species and animates probability bars
+         * 
+         * @param {Object} result - Result from predict() function
+         */
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            const predictedSpeciesEl = document.getElementById('predictedSpecies');
+            
+            // Update predicted species
+            predictedSpeciesEl.textContent = result.predictedClass.charAt(0).toUpperCase() + 
+                                              result.predictedClass.slice(1);
+            
+            // Update probability bars and percentages
+            const classIndices = {
+                setosa: 0,
+                versicolor: 1,
+                virginica: 2
+            };
+
+            for (const [className, index] of Object.entries(classIndices)) {
+                const probPercent = (result.probabilities[index] * 100).toFixed(1);
+                
+                // Update percentage text
+                document.getElementById(`prob${className.charAt(0).toUpperCase() + className.slice(1)}`)
+                    .textContent = `${probPercent}%`;
+                
+                // Animate bar width
+                setTimeout(() => {
+                    document.getElementById(`bar${className.charAt(0).toUpperCase() + className.slice(1)}`)
+                        .style.width = `${probPercent}%`;
+                }, 100);
+            }
+            
+            // Show results section
+            resultsDiv.style.display = 'block';
+        }
+
+        /**
+         * Show error message to user
+         * 
+         * @param {string} message - Error message to display
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // Hide error after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        /**
+         * Hide error message
+         */
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        /**
+         * Reset probability bars to zero width
+         */
+        function resetBars() {
+            const bars = ['barSetosa', 'barVersicolor', 'barVirginica'];
+            bars.forEach(barId => {
+                document.getElementById(barId).style.width = '0%';
+            });
+        }
+
+        // Form submission handler
+        document.getElementById('irisForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous results and errors
+            hideError();
+            resetBars();
+            
+            // Get input values
+            const measurements = {
+                sepalLength: parseFloat(document.getElementById('sepalLength').value),
+                sepalWidth: parseFloat(document.getElementById('sepalWidth').value),
+                petalLength: parseFloat(document.getElementById('petalLength').value),
+                petalWidth: parseFloat(document.getElementById('petalWidth').value)
+            };
+            
+            // Validate inputs
+            const validation = validateInputs(measurements);
+            if (!validation.isValid) {
+                showError(validation.error);
+                document.getElementById('results').style.display = 'none';
+                return;
+            }
+            
+            // Make prediction
+            const result = predict(measurements);
+            
+            // Display results
+            displayResults(result);
+        });
+    </script>
+</body>
+</html>
